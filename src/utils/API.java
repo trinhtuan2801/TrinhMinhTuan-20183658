@@ -25,30 +25,36 @@ public class API {
 	public static DateFormat DATE_FORMATER = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 	private static Logger LOGGER = Utils.getLogger(Utils.class.getName());
 
-	/**
-	 * @param url
-	 * @param token
-	 * @return
-	 * @throws Exception
-	 */
-	public static String get(String url, String token) throws Exception {
+	private static HttpURLConnection setupConnection(String url, String method) throws IOException{
+
 		LOGGER.info("Request URL: " + url + "\n");
 		URL line_api_url = new URL(url);
 		HttpURLConnection conn = (HttpURLConnection) line_api_url.openConnection();
 		conn.setDoInput(true);
 		conn.setDoOutput(true);
-		conn.setRequestMethod("GET");
+		conn.setRequestMethod(method);
 		conn.setRequestProperty("Content-Type", "application/json");
-		conn.setRequestProperty("Authorization", "Bearer " + token);
+		return conn;
+	}
+
+	private static String readResponse(HttpURLConnection conn) throws IOException {
+
 		BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 		String inputLine;
-		StringBuilder respone = new StringBuilder(); // ising StringBuilder for the sake of memory and performance
+		StringBuilder response = new StringBuilder();
 		while ((inputLine = in.readLine()) != null)
 			System.out.println(inputLine);
-		respone.append(inputLine + "\n");
+		response.append(inputLine + "\n");
 		in.close();
-		LOGGER.info("Respone Info: " + respone.substring(0, respone.length() - 1).toString());
-		return respone.substring(0, respone.length() - 1).toString();
+		String responseInfo = response.substring(0, response.length() - 1).toString();
+		LOGGER.info("Response Info: " + responseInfo);
+		return responseInfo;
+	}
+
+	public static String get(String url, String token) throws Exception {
+		HttpURLConnection conn = setupConnection(url, "GET");
+
+		return readResponse(conn);
 	}
 
 	int var;
@@ -57,30 +63,14 @@ public class API {
 //			, String token
 	) throws IOException {
 		allowMethods("PATCH");
-		URL line_api_url = new URL(url);
-		LOGGER.info("Request Info:\nRequest URL: " + url + "\n" + "Payload Data: " + data + "\n");
-		HttpURLConnection conn = (HttpURLConnection) line_api_url.openConnection();
-		conn.setDoInput(true);
-		conn.setDoOutput(true);
-		conn.setRequestMethod("PATCH");
-		conn.setRequestProperty("Content-Type", "application/json");
-//		conn.setRequestProperty("Authorization", "Bearer " + token);
+
+		HttpURLConnection conn = setupConnection(url, "POST");
+
 		Writer writer = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()));
 		writer.write(data);
 		writer.close();
-		BufferedReader in;
-		String inputLine;
-		if (conn.getResponseCode() / 100 == 2) {
-			in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-		} else {
-			in = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
-		}
-		StringBuilder response = new StringBuilder();
-		while ((inputLine = in.readLine()) != null)
-			response.append(inputLine);
-		in.close();
-		LOGGER.info("Respone Info: " + response.toString());
-		return response.toString();
+
+		return readResponse(conn);
 	}
 
 	private static void allowMethods(String... methods) {
